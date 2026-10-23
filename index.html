@@ -1,0 +1,85 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+  <title>CAMPASS QR受付テスト</title>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 20px;
+      background: #f3f8fc;
+      color: #17365d;
+    }
+
+    h1 {
+      color: #1765a3;
+    }
+
+    #reader {
+      width: 100%;
+      max-width: 420px;
+      margin: 20px auto;
+    }
+
+    #result {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+      overflow-wrap: anywhere;
+    }
+  </style>
+
+  <script src="https://unpkg.com/html5-qrcode"
+          type="text/javascript"></script>
+</head>
+
+<body>
+  <h1>CAMPASS</h1>
+  <h2>QRコード受付テスト</h2>
+  <p>QRコードをカメラにかざしてください</p>
+
+  <div id="reader"></div>
+
+  <div id="result">
+    読み取り待機中
+  </div>
+
+  <script>
+    let lastText = "";
+    let lastTime = 0;
+
+    function onScanSuccess(decodedText) {
+      const now = Date.now();
+
+      // 同じコードの連続検出を3秒間抑制
+      if (decodedText === lastText &&
+          now - lastTime < 3000) {
+        return;
+      }
+
+      lastText = decodedText;
+      lastTime = now;
+
+      document.getElementById("result").textContent =
+        "読み取り成功：" + decodedText;
+    }
+
+    const scanner = new Html5QrcodeScanner(
+      "reader",
+      {
+        fps: 10,
+        qrbox: { width: 220, height: 220 }
+      },
+      false
+    );
+
+    scanner.render(onScanSuccess);
+  </script>
+</body>
+</html>
