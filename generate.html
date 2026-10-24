@@ -1,0 +1,93 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+  <title>CAMPASS QRコード生成テスト</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #f3f8fc;
+      color: #17365d;
+      padding: 24px;
+    }
+
+    h1 { color: #1765a3; }
+
+    input {
+      padding: 12px;
+      width: 90%;
+      max-width: 380px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    button {
+      padding: 12px 24px;
+      margin: 16px;
+      font-size: 16px;
+      background: #1765a3;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #qrcode {
+      display: flex;
+      justify-content: center;
+      margin: 24px auto;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>CAMPASS</h1>
+  <h2>QRコード生成テスト</h2>
+
+  <p>テスト文字列を入力してください</p>
+
+  <input id="qrText"
+         type="text"
+         value="CAMPASS-TEST-001">
+
+  <div>
+    <button onclick="generateQR()">QRコードを生成</button>
+  </div>
+
+  <div id="qrcode"></div>
+
+  <p id="status"></p>
+
+  <script>
+    function generateQR() {
+      const text = document.getElementById("qrText").value;
+      const target = document.getElementById("qrcode");
+      const status = document.getElementById("status");
+
+      target.innerHTML = "";
+      status.textContent = "";
+
+      if (!text.trim()) {
+        status.textContent = "文字列を入力してください";
+        return;
+      }
+
+      new QRCode(target, {
+        text: text,
+        width: 240,
+        height: 240,
+        correctLevel: QRCode.CorrectLevel.M
+      });
+
+      status.textContent = "QRコード生成完了！";
+    }
+  </script>
+</body>
+</html>
