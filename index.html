@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport"
         content="width=device-width, initial-scale=1">
+
   <title>CAMPASS QR入退室受付</title>
 
   <style>
@@ -134,6 +135,7 @@
       <div class="subtitle">QR入退室管理システム</div>
 
       <h2>入退室受付</h2>
+
       <p>
         QRコードをお持ちの方は<br>
         下のボタンを押してください。
@@ -255,7 +257,7 @@
         scanner = new Html5Qrcode("reader");
 
         await scanner.start(
-          { facingMode: "environment" },
+          { facingMode: "user" },
           {
             fps: 10,
             qrbox: {
@@ -299,7 +301,7 @@
       busy = true;
 
       // QRの内容は画面に表示しない
-      // この段階ではサーバー送信もしない
+      // 現段階ではサーバー送信もしない
       if (!decodedText) {
         busy = false;
         return;
