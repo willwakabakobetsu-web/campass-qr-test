@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0">
+
   <title>CAMPASS QR受付</title>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -58,6 +59,11 @@
     .success {
       background: #e4f5ea;
       color: #17643c;
+    }
+
+    .warning {
+      background: #fff5dc;
+      color: #8a5b16;
     }
 
     .error {
@@ -121,16 +127,22 @@
 
 <body>
   <main class="container">
+
     <h1>CAMPASS</h1>
     <div class="subtitle">QR受付システム</div>
 
     <section id="home">
+
       <div id="firebaseStatus" class="status">
         Firebaseに接続しています...
       </div>
 
       <div id="workerStatus" class="status">
         Workersとの接続を待っています...
+      </div>
+
+      <div id="terminalStatus" class="status">
+        端末登録情報を確認しています...
       </div>
 
       <button id="startButton"
@@ -144,9 +156,11 @@
       </div>
 
       <div id="uidDisplay" class="uid"></div>
+
     </section>
 
     <section id="scannerScreen" class="hidden">
+
       <h2>QRコードをかざしてください</h2>
       <p>カメラにQRコードを向けてください。</p>
 
@@ -155,9 +169,11 @@
       <button onclick="returnHome()">
         トップ画面に戻る
       </button>
+
     </section>
 
     <section id="resultScreen" class="hidden">
+
       <div class="check">✓</div>
       <h2>QRコードを読み取りました</h2>
       <p>読み取りテスト成功</p>
@@ -166,7 +182,9 @@
       <div class="notice">
         入退室の登録はまだ行っていません。
       </div>
+
     </section>
+
   </main>
 
   <script>
@@ -203,6 +221,8 @@
       document.getElementById("firebaseStatus");
     const workerStatus =
       document.getElementById("workerStatus");
+    const terminalStatus =
+      document.getElementById("terminalStatus");
     const startButton =
       document.getElementById("startButton");
     const uidDisplay =
@@ -217,7 +237,6 @@
       home.classList.add("hidden");
       scannerScreen.classList.add("hidden");
       resultScreen.classList.add("hidden");
-
       screen.classList.remove("hidden");
     }
 
@@ -265,6 +284,11 @@
         "Cloudflare Workersで認証を確認中..."
       );
 
+      setStatus(
+        terminalStatus,
+        "Firestoreの登録端末を照合中..."
+      );
+
       try {
         const idToken = await user.getIdToken();
 
@@ -280,33 +304,71 @@
 
         const result = await response.json();
 
-        if (
-          response.ok &&
-          result.ok === true &&
-          result.uid === user.uid &&
-          result.terminalAuthorized === false
-        ) {
-          connectionVerified = true;
+        if (!response.ok || result.ok !== true) {
+          throw new Error(
+            result.errorCode ||
+            result.message ||
+            "認証処理に失敗しました"
+          );
+        }
 
+        if (result.uid !== user.uid) {
+          throw new Error(
+            "認証UIDが一致しません"
+          );
+        }
+
+        setStatus(
+          workerStatus,
+          "Workers認証成功！Firebaseトークン検証済み",
+          "success"
+        );
+
+        if (
+          result.terminalRegistered === true &&
+          result.terminalAuthorized === true
+        ) {
           setStatus(
-            workerStatus,
-            "Workers認証成功！Firebaseトークンを検証できました。",
+            terminalStatus,
+            "端末認証成功（利用可能）",
             "success"
           );
 
-          // テストモードのみカメラを使用可能にする
-          startButton.disabled = false;
+        } else if (
+          result.terminalRegistered === true &&
+          result.terminalStatus === "inactive"
+        ) {
+          setStatus(
+            terminalStatus,
+            "登録済み・利用停止中（inactive）",
+            "warning"
+          );
+
         } else {
-          throw new Error(
-            result.message || "認証結果が一致しません"
+          setStatus(
+            terminalStatus,
+            "未登録または利用不可の端末です",
+            "error"
           );
         }
+
+        // 接続テスト用カメラのみ許可
+        // 正式な入退室処理はまだ実装しない
+        connectionVerified = true;
+        startButton.disabled = false;
+
       } catch (error) {
         resetConnectionState();
 
         setStatus(
           workerStatus,
           "Workers認証失敗：" + error.message,
+          "error"
+        );
+
+        setStatus(
+          terminalStatus,
+          "端末情報を確認できませんでした",
           "error"
         );
       }
@@ -346,6 +408,7 @@
         );
 
         scanning = true;
+
       } catch (error) {
         scanning = false;
         scanner = null;
@@ -366,7 +429,8 @@
 
       processing = true;
 
-      // この段階ではQRの内容をサーバーへ送らない
+      // 接続テストモード
+      // QRの内容はサーバーへ送信しない
       // 入退室記録も行わない
 
       await stopScanner();
