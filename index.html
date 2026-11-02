@@ -4,238 +4,172 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport"
-        content="width=device-width, initial-scale=1">
-  <title>CAMPASS QR入退室受付</title>
-
-  <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      padding: 20px;
-      font-family: -apple-system, BlinkMacSystemFont,
-        "Helvetica Neue", sans-serif;
-      background: #f3f8fc;
-      color: #17365d;
-      text-align: center;
-    }
-
-    .panel {
-      width: 100%;
-      max-width: 460px;
-      min-height: 440px;
-      margin: 25px auto;
-      padding: 30px 20px;
-      background: white;
-      border-radius: 20px;
-      box-shadow: 0 5px 22px rgba(0,0,0,.06);
-    }
-
-    .logo {
-      margin: 10px 0 4px;
-      color: #1765a3;
-      font-size: 38px;
-      font-weight: 800;
-      letter-spacing: 2px;
-    }
-
-    .subtitle {
-      color: #65768a;
-      font-size: 14px;
-      margin-bottom: 30px;
-    }
-
-    h2 { margin: 15px 0; font-size: 23px; }
-    p { line-height: 1.7; }
-
-    button {
-      cursor: pointer;
-      font-family: inherit;
-    }
-
-    .primary-button {
-      display: block;
-      width: 100%;
-      padding: 20px 12px;
-      margin: 25px auto 0;
-      border: none;
-      border-radius: 14px;
-      background: #1765a3;
-      color: white;
-      font-size: 20px;
-      font-weight: bold;
-    }
-
-    .primary-button:disabled {
-      background: #94a3b8;
-      cursor: not-allowed;
-    }
-
-    .secondary-button {
-      width: 100%;
-      margin-top: 20px;
-      padding: 13px;
-      background: white;
-      color: #1765a3;
-      border: 1px solid #1765a3;
-      border-radius: 12px;
-      font-size: 16px;
-    }
-
-    .screen { display: none; }
-    .screen.active { display: block; }
-
-    #reader {
-      width: 100%;
-      max-width: 400px;
-      margin: 20px auto;
-    }
-
-    .success-icon {
-      font-size: 65px;
-      color: #25864c;
-      margin-top: 35px;
-    }
-
-    .success-title {
-      color: #25864c;
-      font-size: 28px;
-      font-weight: bold;
-      margin: 15px 0;
-    }
-
-    .notice {
-      color: #697789;
-      font-size: 13px;
-      margin-top: 30px;
-    }
-
-    #camera-error {
-      color: #b42318;
-      font-size: 14px;
-      overflow-wrap: anywhere;
-    }
-
-    .firebase-status {
-      margin: 18px 0;
-      padding: 12px;
-      border-radius: 10px;
-      background: #eef2f6;
-      color: #526276;
-      font-size: 13px;
-      overflow-wrap: anywhere;
-    }
-
-    .firebase-status.ok {
-      background: #e4f5e8;
-      color: #176b36;
-    }
-
-    .firebase-status.error {
-      background: #fdeaea;
-      color: #a12b2b;
-    }
-
-    .uid-box {
-      display: none;
-      margin-top: 12px;
-      padding: 12px;
-      background: #f3f8fc;
-      border-radius: 10px;
-      font-size: 12px;
-      overflow-wrap: anywhere;
-      user-select: text;
-    }
-  </style>
-
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+        content="width=device-width, initial-scale=1.0">
+  <title>CAMPASS QR受付</title>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont,
+        "Helvetica Neue", Arial, sans-serif;
+      background: #f2f5fa;
+      color: #20314c;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 520px;
+      min-height: 100vh;
+      margin: auto;
+      padding: 32px 20px;
+      background: white;
+    }
+
+    h1 {
+      margin: 20px 0 4px;
+      color: #173d70;
+      font-size: 38px;
+      letter-spacing: 3px;
+    }
+
+    .subtitle {
+      color: #63748a;
+      margin-bottom: 30px;
+    }
+
+    .status {
+      padding: 14px;
+      border-radius: 12px;
+      background: #edf2f8;
+      margin: 16px 0;
+      font-size: 14px;
+      line-height: 1.7;
+      overflow-wrap: anywhere;
+    }
+
+    .success {
+      background: #e4f5ea;
+      color: #17643c;
+    }
+
+    .error {
+      background: #fff0ed;
+      color: #a12d24;
+    }
+
+    button {
+      width: 100%;
+      padding: 20px;
+      margin-top: 18px;
+      border: 0;
+      border-radius: 14px;
+      background: #1763ad;
+      color: white;
+      font-size: 21px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background: #aab5c2;
+      cursor: not-allowed;
+    }
+
+    #reader {
+      width: 100%;
+      margin-top: 20px;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .check {
+      font-size: 64px;
+      color: #219653;
+      margin-top: 50px;
+    }
+
+    .notice {
+      margin-top: 24px;
+      color: #8a5b16;
+      background: #fff5dc;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .uid {
+      font-size: 11px;
+      color: #7d8997;
+      overflow-wrap: anywhere;
+      margin-top: 18px;
+    }
+  </style>
 </head>
 
 <body>
-  <div class="panel">
+  <main class="container">
+    <h1>CAMPASS</h1>
+    <div class="subtitle">QR受付システム</div>
 
-    <!-- トップ画面 -->
-    <section id="home" class="screen active">
-      <h1 class="logo">CAMPASS</h1>
-      <div class="subtitle">QR入退室管理システム</div>
-
-      <h2>入退室受付</h2>
-
-      <p>
-        QRコードをお持ちの方は<br>
-        下のボタンを押してください。
-      </p>
-
-      <div id="firebase-status"
-           class="firebase-status"
-           role="status">
-        Firebase接続を確認しています…
+    <section id="home">
+      <div id="firebaseStatus" class="status">
+        Firebaseに接続しています...
       </div>
 
-      <button
-        id="start-button"
-        class="primary-button"
-        onclick="startReception()"
-        disabled>
+      <div id="workerStatus" class="status">
+        Workersとの接続を待っています...
+      </div>
+
+      <button id="startButton"
+              onclick="startScanner()" disabled>
         QRコードを読み取る
       </button>
 
-      <div id="uid-box" class="uid-box">
-        <strong>テスト用：端末認証UID</strong>
-        <div id="uid-value"></div>
+      <div class="notice">
+        現在は接続テストモードです。<br>
+        QRを読み取っても入退室は記録されません。
       </div>
 
-      <p class="notice">
-        受付を開始すると前面カメラが起動します。
-      </p>
+      <div id="uidDisplay" class="uid"></div>
     </section>
 
-    <!-- QR読み取り画面 -->
-    <section id="scan" class="screen">
-      <h1 class="logo">CAMPASS</h1>
-      <h2>QRコード読み取り</h2>
-
-      <p>カメラにQRコードをかざしてください</p>
+    <section id="scannerScreen" class="hidden">
+      <h2>QRコードをかざしてください</h2>
+      <p>カメラにQRコードを向けてください。</p>
 
       <div id="reader"></div>
 
-      <p id="camera-error" role="alert"></p>
-
-      <button
-        class="secondary-button"
-        onclick="returnHome()">
+      <button onclick="returnHome()">
         トップ画面に戻る
       </button>
     </section>
 
-    <!-- 読み取り完了画面 -->
-    <section id="complete" class="screen">
-      <h1 class="logo">CAMPASS</h1>
+    <section id="resultScreen" class="hidden">
+      <div class="check">✓</div>
+      <h2>QRコードを読み取りました</h2>
+      <p>読み取りテスト成功</p>
+      <p>3秒後にトップ画面に戻ります。</p>
 
-      <div class="success-icon">✓</div>
-
-      <div class="success-title">
-        QR読み取り完了！
+      <div class="notice">
+        入退室の登録はまだ行っていません。
       </div>
-
-      <p>QRコードを読み取りました。</p>
-
-      <p class="notice">
-        3秒後にトップ画面へ戻ります。
-      </p>
     </section>
-
-    <p class="notice">
-      ※現在は動作確認用です。<br>
-      入退室記録・保護者通知は行われません。
-    </p>
-  </div>
+  </main>
 
   <script>
-    // Firebase Webアプリ設定
     const firebaseConfig = {
       apiKey: "AIzaSyBeGiWxWXQJY8QTCsrhj-0Dy-_7YHcUzJs",
       authDomain: "campass-6e543.firebaseapp.com",
@@ -246,110 +180,218 @@
       measurementId: "G-VZB7Y9F1LE"
     };
 
+    const API_URL =
+      "https://campass-qr-api.will-wakaba-kobetsu.workers.dev";
+
+    firebase.initializeApp(firebaseConfig);
+
+    const auth = firebase.auth();
+
     let scanner = null;
-    let busy = false;
+    let scanning = false;
+    let processing = false;
+    let connectionVerified = false;
     let returnTimer = null;
-    let sessionId = 0;
-    let firebaseReady = false;
 
-    function setFirebaseStatus(message, type) {
-      const area = document.getElementById(
-        "firebase-status"
-      );
+    const home = document.getElementById("home");
+    const scannerScreen =
+      document.getElementById("scannerScreen");
+    const resultScreen =
+      document.getElementById("resultScreen");
 
-      area.textContent = message;
-      area.className = "firebase-status " + (type || "");
+    const firebaseStatus =
+      document.getElementById("firebaseStatus");
+    const workerStatus =
+      document.getElementById("workerStatus");
+    const startButton =
+      document.getElementById("startButton");
+    const uidDisplay =
+      document.getElementById("uidDisplay");
+
+    function setStatus(element, message, type = "") {
+      element.textContent = message;
+      element.className = "status " + type;
     }
 
-    function initializeFirebase() {
-      try {
-        if (typeof firebase === "undefined") {
-          throw new Error(
-            "Firebaseライブラリを読み込めませんでした"
+    function showScreen(screen) {
+      home.classList.add("hidden");
+      scannerScreen.classList.add("hidden");
+      resultScreen.classList.add("hidden");
+
+      screen.classList.remove("hidden");
+    }
+
+    function resetConnectionState() {
+      connectionVerified = false;
+      startButton.disabled = true;
+    }
+
+    auth.onAuthStateChanged(async user => {
+      resetConnectionState();
+
+      if (!user) {
+        setStatus(
+          firebaseStatus,
+          "Firebase匿名認証を開始しています..."
+        );
+
+        try {
+          await auth.signInAnonymously();
+        } catch (error) {
+          setStatus(
+            firebaseStatus,
+            "Firebase認証失敗：" + error.message,
+            "error"
           );
         }
 
-        firebase.initializeApp(firebaseConfig);
+        return;
+      }
 
-        const auth = firebase.auth();
+      setStatus(
+        firebaseStatus,
+        "Firebase接続成功（匿名認証）",
+        "success"
+      );
 
-        auth.onAuthStateChanged(async function(user) {
-          if (user) {
-            firebaseReady = true;
+      uidDisplay.textContent = "UID: " + user.uid;
 
-            setFirebaseStatus(
-              "Firebase接続成功（テストモード）",
-              "ok"
-            );
+      await checkWorkerAuthentication(user);
+    });
 
-            document.getElementById(
-              "start-button"
-            ).disabled = false;
+    async function checkWorkerAuthentication(user) {
+      setStatus(
+        workerStatus,
+        "Cloudflare Workersで認証を確認中..."
+      );
 
-            document.getElementById(
-              "uid-value"
-            ).textContent = user.uid;
+      try {
+        const idToken = await user.getIdToken();
 
-            document.getElementById(
-              "uid-box"
-            ).style.display = "block";
-
-          } else {
-            firebaseReady = false;
-
-            document.getElementById(
-              "start-button"
-            ).disabled = true;
-
-            setFirebaseStatus(
-              "Firebase匿名認証を実行しています…"
-            );
-
-            try {
-              await auth.signInAnonymously();
-            } catch (error) {
-              setFirebaseStatus(
-                "Firebase認証エラー：" +
-                String(error.code || error.message),
-                "error"
-              );
+        const response = await fetch(
+          API_URL + "/auth/check",
+          {
+            method: "POST",
+            headers: {
+              "Authorization": "Bearer " + idToken
             }
           }
-        }, function(error) {
-          setFirebaseStatus(
-            "Firebase認証エラー：" +
-            String(error.code || error.message),
-            "error"
-          );
-        });
+        );
 
+        const result = await response.json();
+
+        if (
+          response.ok &&
+          result.ok === true &&
+          result.uid === user.uid &&
+          result.terminalAuthorized === false
+        ) {
+          connectionVerified = true;
+
+          setStatus(
+            workerStatus,
+            "Workers認証成功！Firebaseトークンを検証できました。",
+            "success"
+          );
+
+          // テストモードのみカメラを使用可能にする
+          startButton.disabled = false;
+        } else {
+          throw new Error(
+            result.message || "認証結果が一致しません"
+          );
+        }
       } catch (error) {
-        setFirebaseStatus(
-          "Firebase初期化エラー：" +
-          String(error.message || error),
+        resetConnectionState();
+
+        setStatus(
+          workerStatus,
+          "Workers認証失敗：" + error.message,
           "error"
         );
       }
     }
 
-    function showScreen(id) {
-      document.querySelectorAll(".screen")
-        .forEach(function(screen) {
-          screen.classList.remove("active");
-        });
+    async function startScanner() {
+      if (!connectionVerified || scanning) {
+        return;
+      }
 
-      document.getElementById(id)
-        .classList.add("active");
+      if (!auth.currentUser) {
+        return;
+      }
+
+      if (returnTimer) {
+        clearTimeout(returnTimer);
+        returnTimer = null;
+      }
+
+      showScreen(scannerScreen);
+      processing = false;
+
+      try {
+        scanner = new Html5Qrcode("reader");
+
+        await scanner.start(
+          { facingMode: "user" },
+          {
+            fps: 10,
+            qrbox: {
+              width: 230,
+              height: 230
+            }
+          },
+          onQrSuccess,
+          () => {}
+        );
+
+        scanning = true;
+      } catch (error) {
+        scanning = false;
+        scanner = null;
+
+        alert(
+          "カメラを起動できませんでした。\n" +
+          error.message
+        );
+
+        showScreen(home);
+      }
     }
 
-    async function stopCamera() {
-      if (!scanner) return;
+    async function onQrSuccess(decodedText) {
+      if (processing) {
+        return;
+      }
+
+      processing = true;
+
+      // この段階ではQRの内容をサーバーへ送らない
+      // 入退室記録も行わない
+
+      await stopScanner();
+
+      showScreen(resultScreen);
+
+      returnTimer = setTimeout(() => {
+        returnTimer = null;
+        showScreen(home);
+      }, 3000);
+    }
+
+    async function stopScanner() {
+      if (!scanner) {
+        scanning = false;
+        return;
+      }
 
       const currentScanner = scanner;
       scanner = null;
 
       try {
-        await currentScanner.stop();
+        if (scanning) {
+          await currentScanner.stop();
+        }
       } catch (error) {
         console.warn("カメラ停止:", error);
       }
@@ -359,113 +401,21 @@
       } catch (error) {
         console.warn("画面クリア:", error);
       }
-    }
 
-    async function startReception() {
-      if (busy || !firebaseReady) return;
-
-      busy = true;
-      clearTimeout(returnTimer);
-
-      const currentSession = ++sessionId;
-
-      document.getElementById(
-        "camera-error"
-      ).textContent = "";
-
-      showScreen("scan");
-
-      try {
-        if (typeof Html5Qrcode === "undefined") {
-          throw new Error(
-            "QR読み取りライブラリを読み込めませんでした"
-          );
-        }
-
-        await stopCamera();
-
-        if (currentSession !== sessionId) return;
-
-        scanner = new Html5Qrcode("reader");
-
-        await scanner.start(
-          { facingMode: "user" },
-          {
-            fps: 10,
-            qrbox: {
-              width: 220,
-              height: 220
-            }
-          },
-          function(decodedText) {
-            onScanSuccess(decodedText, currentSession);
-          },
-          function() {
-            // 読み取り途中のエラーは無視
-          }
-        );
-
-      } catch (error) {
-        if (currentSession === sessionId) {
-          document.getElementById(
-            "camera-error"
-          ).textContent =
-            "カメラを起動できませんでした。" +
-            String(error.message || error);
-        }
-      } finally {
-        if (currentSession === sessionId) {
-          busy = false;
-        }
-      }
-    }
-
-    async function onScanSuccess(
-      decodedText,
-      currentSession
-    ) {
-      if (
-        currentSession !== sessionId ||
-        busy
-      ) {
-        return;
-      }
-
-      busy = true;
-
-      if (!decodedText) {
-        busy = false;
-        return;
-      }
-
-      ++sessionId;
-
-      // QRの内容は画面に表示しない
-      // サーバー送信・入退室記録はまだ行わない
-      await stopCamera();
-
-      showScreen("complete");
-
-      returnTimer = setTimeout(function() {
-        returnHome();
-      }, 3000);
-
-      busy = false;
+      scanning = false;
     }
 
     async function returnHome() {
-      ++sessionId;
-      clearTimeout(returnTimer);
+      if (returnTimer) {
+        clearTimeout(returnTimer);
+        returnTimer = null;
+      }
 
-      showScreen("home");
-
-      await stopCamera();
-
-      busy = false;
+      processing = true;
+      await stopScanner();
+      showScreen(home);
+      processing = false;
     }
-
-    // Firebase匿名認証を開始
-    initializeFirebase();
   </script>
 </body>
 </html>
