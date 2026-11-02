@@ -5,19 +5,36 @@
   <meta charset="UTF-8">
   <meta name="viewport"
         content="width=device-width, initial-scale=1">
-  <title>CAMPASS QR受付テスト</title>
+
+  <title>CAMPASS QR入退室受付</title>
 
   <style>
     body {
       font-family: sans-serif;
       text-align: center;
       padding: 20px;
+      margin: 0;
       background: #f3f8fc;
       color: #17365d;
     }
 
+    .panel {
+      max-width: 460px;
+      margin: 20px auto;
+      padding: 24px;
+      background: white;
+      border-radius: 16px;
+      box-sizing: border-box;
+    }
+
     h1 {
       color: #1765a3;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 24px;
     }
 
     #reader {
@@ -27,11 +44,29 @@
     }
 
     #result {
-      background: white;
+      background: #eef2f6;
       border-radius: 12px;
       padding: 20px;
       margin-top: 20px;
-      overflow-wrap: anywhere;
+      font-size: 18px;
+      font-weight: bold;
+      min-height: 30px;
+    }
+
+    .success {
+      background: #e4f5e8 !important;
+      color: #176b36;
+    }
+
+    .error {
+      background: #fdeaea !important;
+      color: #a12b2b;
+    }
+
+    .note {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #777;
     }
   </style>
 
@@ -40,46 +75,80 @@
 </head>
 
 <body>
+
+<div class="panel">
+
   <h1>CAMPASS</h1>
-  <h2>QRコード受付テスト</h2>
-  <p>QRコードをカメラにかざしてください</p>
+  <div class="subtitle">QR入退室受付</div>
+
+  <p>生徒専用QRコードをカメラにかざしてください</p>
 
   <div id="reader"></div>
 
   <div id="result">
-    読み取り待機中
+    QRコードを読み取ってください
   </div>
 
-  <script>
-    let lastText = "";
-    let lastTime = 0;
+  <p class="note">
+    現在は読み取り機能の動作確認中です。
+    入退室記録や保護者通知は行われません。
+  </p>
 
-    function onScanSuccess(decodedText) {
-      const now = Date.now();
+</div>
 
-      // 同じコードの連続検出を3秒間抑制
-      if (decodedText === lastText &&
-          now - lastTime < 3000) {
-        return;
-      }
+<script>
+  let lastText = "";
+  let lastTime = 0;
 
-      lastText = decodedText;
-      lastTime = now;
+  function showResult(message, type) {
+    const area = document.getElementById("result");
 
-      document.getElementById("result").textContent =
-        "読み取り成功：" + decodedText;
+    area.textContent = message;
+    area.className = type || "";
+  }
+
+  function onScanSuccess(decodedText) {
+    const now = Date.now();
+
+    // 同じQRコードの連続読み取りを抑制
+    if (
+      decodedText === lastText &&
+      now - lastTime < 5000
+    ) {
+      return;
     }
 
-    const scanner = new Html5QrcodeScanner(
-      "reader",
-      {
-        fps: 10,
-        qrbox: { width: 220, height: 220 }
-      },
-      false
-    );
+    lastText = decodedText;
+    lastTime = now;
 
-    scanner.render(onScanSuccess);
-  </script>
+    // QRトークンは画面に表示しない
+    showResult(
+      "QRコードを読み取りました",
+      "success"
+    );
+  }
+
+  function onScanFailure(error) {
+    // 読み取り途中のエラーは画面に表示しない
+  }
+
+  const scanner = new Html5QrcodeScanner(
+    "reader",
+    {
+      fps: 10,
+      qrbox: {
+        width: 220,
+        height: 220
+      }
+    },
+    false
+  );
+
+  scanner.render(
+    onScanSuccess,
+    onScanFailure
+  );
+</script>
+
 </body>
 </html>
