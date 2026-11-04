@@ -103,7 +103,20 @@
     .check {
       font-size: 64px;
       color: #219653;
-      margin-top: 50px;
+      margin-top: 35px;
+    }
+
+    .cross {
+      font-size: 64px;
+      color: #c0392b;
+      margin-top: 35px;
+    }
+
+    .student-name {
+      font-size: 32px;
+      font-weight: bold;
+      margin: 24px 0;
+      overflow-wrap: anywhere;
     }
 
     .notice {
@@ -145,14 +158,14 @@
         端末登録情報を確認しています...
       </div>
 
-      <button id="startButton"
-              onclick="startScanner()" disabled>
+      <button id="startButton" disabled>
         QRコードを読み取る
       </button>
 
       <div class="notice">
-        現在は接続テストモードです。<br>
-        QRを読み取っても入退室は記録されません。
+        現在はQR照合テストモードです。<br>
+        生徒情報の照合のみ行います。<br>
+        入退室記録・保護者通知は行いません。
       </div>
 
       <div id="uidDisplay" class="uid"></div>
@@ -166,7 +179,11 @@
 
       <div id="reader"></div>
 
-      <button onclick="returnHome()">
+      <div id="scanStatus" class="status hidden">
+        QRコードを確認しています...
+      </div>
+
+      <button id="backButton">
         トップ画面に戻る
       </button>
 
@@ -174,14 +191,21 @@
 
     <section id="resultScreen" class="hidden">
 
-      <div class="check">✓</div>
-      <h2>QRコードを読み取りました</h2>
-      <p>読み取りテスト成功</p>
-      <p>3秒後にトップ画面に戻ります。</p>
+      <div id="resultIcon" class="check">✓</div>
+
+      <h2 id="resultTitle">QR認証結果</h2>
+
+      <div id="studentName" class="student-name"></div>
+
+      <p id="resultMessage"></p>
 
       <div class="notice">
-        入退室の登録はまだ行っていません。
+        テストモード：入退室は記録されません。
       </div>
+
+      <button id="resultBackButton">
+        トップ画面に戻る
+      </button>
 
     </section>
 
@@ -208,8 +232,9 @@
     let scanner = null;
     let scanning = false;
     let processing = false;
-    let connectionVerified = false;
+    let terminalAuthorized = false;
     let returnTimer = null;
+    let sessionNumber = 0;
 
     const home = document.getElementById("home");
     const scannerScreen =
@@ -228,6 +253,17 @@
     const uidDisplay =
       document.getElementById("uidDisplay");
 
+    const scanStatus =
+      document.getElementById("scanStatus");
+    const resultIcon =
+      document.getElementById("resultIcon");
+    const resultTitle =
+      document.getElementById("resultTitle");
+    const studentName =
+      document.getElementById("studentName");
+    const resultMessage =
+      document.getElementById("resultMessage");
+
     function setStatus(element, message, type = "") {
       element.textContent = message;
       element.className = "status " + type;
@@ -240,13 +276,60 @@
       screen.classList.remove("hidden");
     }
 
-    function resetConnectionState() {
-      connectionVerified = false;
+    function clearReturnTimer() {
+      if (returnTimer !== null) {
+        clearTimeout(returnTimer);
+        returnTimer = null;
+      }
+    }
+
+    function resetAuthorization() {
+      terminalAuthorized = false;
       startButton.disabled = true;
     }
 
+    async function requestWorker(path, body) {
+      const user = auth.currentUser;
+
+      if (!user) {
+        throw new Error("Firebase認証が必要です");
+      }
+
+      const idToken = await user.getIdToken();
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => {
+        controller.abort();
+      }, 30000);
+
+      try {
+        const response = await fetch(API_URL + path, {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + idToken,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(body || {}),
+          signal: controller.signal,
+          cache: "no-store"
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || result.ok !== true) {
+          throw new Error(
+            result.message || "サーバーとの通信に失敗しました"
+          );
+        }
+
+        return result;
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
     auth.onAuthStateChanged(async user => {
-      resetConnectionState();
+      resetAuthorization();
 
       if (!user) {
         setStatus(
@@ -290,37 +373,18 @@
       );
 
       try {
-        const idToken = await user.getIdToken();
-
-        const response = await fetch(
-          API_URL + "/auth/check",
-          {
-            method: "POST",
-            headers: {
-              "Authorization": "Bearer " + idToken
-            }
-          }
+        const result = await requestWorker(
+          "/auth/check",
+          {}
         );
 
-        const result = await response.json();
-
-        if (!response.ok || result.ok !== true) {
-          throw new Error(
-            result.errorCode ||
-            result.message ||
-            "認証処理に失敗しました"
-          );
-        }
-
         if (result.uid !== user.uid) {
-          throw new Error(
-            "認証UIDが一致しません"
-          );
+          throw new Error("認証UIDが一致しません");
         }
 
         setStatus(
           workerStatus,
-          "Workers認証成功！Firebaseトークン検証済み",
+          "Workers認証成功！",
           "success"
         );
 
@@ -328,11 +392,15 @@
           result.terminalRegistered === true &&
           result.terminalAuthorized === true
         ) {
+          terminalAuthorized = true;
+
           setStatus(
             terminalStatus,
             "端末認証成功（利用可能）",
             "success"
           );
+
+          startButton.disabled = false;
 
         } else if (
           result.terminalRegistered === true &&
@@ -352,13 +420,8 @@
           );
         }
 
-        // 接続テスト用カメラのみ許可
-        // 正式な入退室処理はまだ実装しない
-        connectionVerified = true;
-        startButton.disabled = false;
-
       } catch (error) {
-        resetConnectionState();
+        resetAuthorization();
 
         setStatus(
           workerStatus,
@@ -375,21 +438,25 @@
     }
 
     async function startScanner() {
-      if (!connectionVerified || scanning) {
+      if (
+        !terminalAuthorized ||
+        scanning ||
+        scanner ||
+        processing
+      ) {
         return;
       }
 
-      if (!auth.currentUser) {
-        return;
-      }
+      clearReturnTimer();
 
-      if (returnTimer) {
-        clearTimeout(returnTimer);
-        returnTimer = null;
-      }
+      sessionNumber++;
+      const thisSession = sessionNumber;
 
-      showScreen(scannerScreen);
       processing = false;
+      showScreen(scannerScreen);
+      scanStatus.classList.add("hidden");
+
+      startButton.disabled = true;
 
       try {
         scanner = new Html5Qrcode("reader");
@@ -403,44 +470,109 @@
               height: 230
             }
           },
-          onQrSuccess,
+          decodedText => {
+            onQrSuccess(decodedText, thisSession);
+          },
           () => {}
         );
 
         scanning = true;
 
+        if (thisSession !== sessionNumber) {
+          await stopScanner();
+        }
+
       } catch (error) {
-        scanning = false;
-        scanner = null;
+        await stopScanner();
 
-        alert(
-          "カメラを起動できませんでした。\n" +
-          error.message
-        );
-
-        showScreen(home);
+        if (thisSession === sessionNumber) {
+          alert(
+            "カメラを起動できませんでした。\n" +
+            error.message
+          );
+          showScreen(home);
+          startButton.disabled = !terminalAuthorized;
+        }
       }
     }
 
-    async function onQrSuccess(decodedText) {
-      if (processing) {
+    async function onQrSuccess(decodedText, thisSession) {
+      if (
+        processing ||
+        thisSession !== sessionNumber
+      ) {
         return;
       }
 
       processing = true;
 
-      // 接続テストモード
-      // QRの内容はサーバーへ送信しない
-      // 入退室記録も行わない
+      scanStatus.textContent =
+        "生徒マスターと照合しています...";
+      scanStatus.className = "status";
 
+      // 同じQRを繰り返し読み取らないよう停止
       await stopScanner();
+
+      try {
+        const result = await requestWorker(
+          "/qr/verify",
+          {
+            qrToken: decodedText
+          }
+        );
+
+        if (thisSession !== sessionNumber) {
+          return;
+        }
+
+        if (result.verified === true) {
+          showResult(
+            true,
+            result.name,
+            "生徒マスターとの照合に成功しました"
+          );
+        } else {
+          showResult(
+            false,
+            "",
+            result.message || "QR照合に失敗しました"
+          );
+        }
+
+      } catch (error) {
+        if (thisSession !== sessionNumber) {
+          return;
+        }
+
+        showResult(
+          false,
+          "",
+          error.name === "AbortError"
+            ? "通信がタイムアウトしました"
+            : error.message
+        );
+      }
+    }
+
+    function showResult(success, name, message) {
+      resultIcon.textContent = success ? "✓" : "×";
+      resultIcon.className = success ? "check" : "cross";
+
+      resultTitle.textContent = success
+        ? "QR認証成功"
+        : "QR認証失敗";
+
+      studentName.textContent = success ? name : "";
+      resultMessage.textContent = message;
 
       showScreen(resultScreen);
 
+      clearReturnTimer();
+
       returnTimer = setTimeout(() => {
         returnTimer = null;
-        showScreen(home);
-      }, 3000);
+        returnHome();
+      }, success ? 5000 : 7000);
     }
 
     async function stopScanner() {
@@ -461,7 +593,7 @@
       }
 
       try {
-        currentScanner.clear();
+        await currentScanner.clear();
       } catch (error) {
         console.warn("画面クリア:", error);
       }
@@ -470,16 +602,31 @@
     }
 
     async function returnHome() {
-      if (returnTimer) {
-        clearTimeout(returnTimer);
-        returnTimer = null;
-      }
+      sessionNumber++;
+      clearReturnTimer();
 
       processing = true;
       await stopScanner();
+
       showScreen(home);
+      resetAuthorization();
       processing = false;
+
+      const user = auth.currentUser;
+
+      if (user) {
+        await checkWorkerAuthentication(user);
+      }
     }
+
+    document.getElementById("startButton")
+      .addEventListener("click", startScanner);
+
+    document.getElementById("backButton")
+      .addEventListener("click", returnHome);
+
+    document.getElementById("resultBackButton")
+      .addEventListener("click", returnHome);
   </script>
 </body>
 </html>
